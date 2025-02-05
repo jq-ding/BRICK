@@ -94,6 +94,11 @@ class BRICK(nn.Module):
 
         x, y, saved_x = self.kuramoto_solver(x, y, adj)
         
+        if self.parcellation:
+            w_matrix = saved_y.reshape(saved_y.shape[0], -1)
+            output = y.transpose(1,2).reshape(y.shape[0], -1)
+            return output, w_matrix, saved_x, saved_y
+        
         if self.node_classification:
             output = self.out_pred_node(y.transpose(1, 2))
         else:
