@@ -1,7 +1,6 @@
 # train_brick_diffdata.py
 import argparse
 import os
-import logging
 import random
 import time
 import numpy as np
@@ -13,24 +12,16 @@ from torch import optim
 from torch_geometric.datasets import WebKB, Actor, WikipediaNetwork
 from torch_geometric.utils import to_dense_adj
 
-from source.utils import save_checkpoint, save_model, LinearWarmupScheduler, compute_weighted_metrics
+from source.utils import LinearWarmupScheduler, compute_weighted_metrics, logger
 from accelerate import utils
 from source.brick import BRICK
 from ema_pytorch import EMA
 
-def logger():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('[%(asctime)s] %(message)s', '%Y-%m-%d %H:%M:%S')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-    return logger
 
 def train_one_epoch(model, ema, optimizer, scheduler, data, train_mask, device, epoch, logger):
     model.train()
     epoch_loss = 0.0
+    
     criterion = nn.CrossEntropyLoss()
     data = data.to(device)
     inputs = data.x.unsqueeze(0)
@@ -90,7 +81,6 @@ def main():
     parser.add_argument("--ema_decay", type=float, default=0.999, help="EMA decay factor")
 
     parser.add_argument("--epochs", type=int, default=300, help="Number of epochs")
-    parser.add_argument("--checkpoint_every", type=int, default=50, help="Save checkpoint every n epochs")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--warmup_iters", type=int, default=10)
     parser.add_argument("--batchsize", type=int, default=256)  
@@ -100,16 +90,16 @@ def main():
     parser.add_argument("--num_nodes", type=int, default=116, help="Number of nodes")
     parser.add_argument("--feature_dim", type=int, default=39, help="Input feature dimension")
     parser.add_argument("--num_class", type=int, default=4, help="Number of classes")
-    parser.add_argument("--L", type=int, default=1, help="Number of Kuramoto layers")
+    parser.add_argument("--L", type=int, default=1, help="Number of Kuramoto sovlers")
     parser.add_argument("--h", type=int, default=256, help="Hidden dimension")
-    parser.add_argument("--T", type=int, default=8, help="Number of recurrence steps")
+    parser.add_argument("--T", type=int, default=8, help="Number of time steps")
     parser.add_argument("--N", type=int, default=4, help="oscillator dimensions")
     parser.add_argument("--beta", type=float, default=1.0, help="Beta for Kuramoto solver")
 
     parser.add_argument("--use_pe", action="store_false", help="Use positional encoding")
     parser.add_argument("--node_cls", action="store_true", help="Node classification mode")
-    parser.add_argument("--y_type", type=str, default="linear", choices=["conv", "linear"], help="Y computation type ")
-    parser.add_argument("--mapping_type", type=str, default="conv", choices=["conv", "gconv"], help="Mapping type for BRICK")
+    parser.add_argument("--y_type", type=str, default="linear", choices=["conv", "linear"], help="y computation type ")
+    parser.add_argument("--mapping_type", type=str, default="conv", choices=["conv", "gconv"], help="Mapping type for y")
     parser.add_argument("--parcellation", action="store_false", help="Implement parcellation or not")
 
     args = parser.parse_args()
@@ -197,9 +187,6 @@ def main():
         metrics_summary["precision"].append(best_test_metrics["precision"])
         metrics_summary["f1"].append(best_test_metrics["f1"])
         logger.info(f"Best Test Metrics for split {split_idx+1}: {best_test_metrics}")
-
-        save_checkpoint(net, optimizer, epoch, loss, checkpoint_dir=".")
-        save_model(ema, epoch, checkpoint_dir=".", prefix="ema")
 
     avg_acc = np.mean(metrics_summary["accuracy"])
     avg_pre = np.mean(metrics_summary["precision"])
