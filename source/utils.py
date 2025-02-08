@@ -43,24 +43,6 @@ def save_checkpoint(
 
     manage_checkpoints(checkpoint_dir, max_checkpoints)
 
-
-def manage_checkpoints(checkpoint_dir, max_checkpoints):
-    if max_checkpoints is None:
-        return
-    else:
-        checkpoints = [
-            f
-            for f in os.listdir(checkpoint_dir)
-            if f.startswith("checkpoint_") and f.endswith(".pth")
-        ]
-        checkpoints.sort(key=lambda f: int(f.split("_")[1].split(".")[0]))
-
-        while len(checkpoints) > max_checkpoints:
-            old_checkpoint = checkpoints.pop(0)
-            os.remove(os.path.join(checkpoint_dir, old_checkpoint))
-            print(f"Old checkpoint removed: {old_checkpoint}")
-
-
 class LinearWarmupScheduler(_LRScheduler):
     def __init__(self, optimizer, warmup_iters, last_iter=-1):
         self.warmup_iters = warmup_iters
