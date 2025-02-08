@@ -108,26 +108,25 @@ def main():
     parser.add_argument("--ema_decay", type=float, default=0.999, help="EMA decay factor")
 
     parser.add_argument("--epochs", type=int, default=300, help="Number of epochs")
-    parser.add_argument("--checkpoint_every", type=int, default=50, help="Save checkpoint every n epochs")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--warmup_iters", type=int, default=10)
     parser.add_argument("--batchsize", type=int, default=256)  
     parser.add_argument("--num_workers", type=int, default=8)
 
-    parser.add_argument("--data", type=str, default="Cornell", help="Dataset name")
+    parser.add_argument("--data", type=str, default="HCP-YA", help="Dataset name")
     parser.add_argument("--num_nodes", type=int, default=116, help="Number of nodes")
-    parser.add_argument("--feature_dim", type=int, default=39, help="Input feature dimension")
+    parser.add_argument("--feature_dim", type=int, default=175, help="Input feature dimension")
     parser.add_argument("--num_class", type=int, default=4, help="Number of classes")
-    parser.add_argument("--L", type=int, default=1, help="Number of Kuramoto layers")
+    parser.add_argument("--L", type=int, default=1, help="Number of Kuramoto solvers")
     parser.add_argument("--h", type=int, default=256, help="Hidden dimension")
-    parser.add_argument("--T", type=int, default=8, help="Number of recurrence steps")
+    parser.add_argument("--T", type=int, default=8, help="Number of times steps")
     parser.add_argument("--N", type=int, default=4, help="oscillator dimensions")
     parser.add_argument("--beta", type=float, default=1.0, help="Beta for Kuramoto solver")
 
     parser.add_argument("--use_pe", action="store_true", help="Use positional encoding")
     parser.add_argument("--node_cls", action="store_false", help="Node classification mode")
-    parser.add_argument("--y_type", type=str, default="linear", choices=["conv", "linear"], help="Y computation type ")
-    parser.add_argument("--mapping_type", type=str, default="conv", choices=["conv", "gconv"], help="Mapping type for BRICK")
+    parser.add_argument("--y_type", type=str, default="linear", choices=["conv", "linear"], help="y computation type ")
+    parser.add_argument("--mapping_type", type=str, default="conv", choices=["conv", "gconv"], help="Mapping type for y")
     parser.add_argument("--parcellation", action="store_false", help="Implement parcellation or not")
     
     args = parser.parse_args()
@@ -211,10 +210,6 @@ def main():
                 np.save(os.path.join(".", f"fold_{fold_idx}_features.npy"), features.cpu().detach().numpy())
                 np.save(os.path.join(".", f"fold_{fold_idx}_inputs.npy"), inputs_data.cpu().detach().numpy())
                 np.save(os.path.join(".", f"fold_{fold_idx}_gt.npy"), gt.cpu().detach().numpy())
-
-            if (epoch + 1) % args.checkpoint_every == 0 and accelerator.is_main_process:
-                save_checkpoint(accelerator.unwrap_model(model), optimizer, epoch, epoch_loss, checkpoint_dir=".")
-                save_model(ema, epoch, checkpoint_dir=".", prefix="ema")
 
         if accelerator.is_main_process:
             torch.save(accelerator.unwrap_model(model).state_dict(), os.path.join(".", "model.pth"))
