@@ -61,7 +61,7 @@ class HCPA_BoldSCDataset(Dataset):
         fc_tensor = torch.nan_to_num(fc)
         sc_tensor = torch.tensor(sc, dtype=torch.float32)
         label_tensor = torch.tensor(label, dtype=torch.long)
-        return bold_tensor, fc_tensor, sc_tensor, label_tensor
+        return bold_tensor, fc_tensor, label_tensor
 
 
 class TUD(Dataset):
